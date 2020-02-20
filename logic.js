@@ -1,38 +1,21 @@
-const fs = require('fs');
-const path = require('path');
-
-const filePath = path.resolve(__dirname + '/input.txt');
-
-const fileData = fs.readFileSync(filePath, 'utf8');
+var fs = require('fs');
+var path = require('path');
 
 
-var position = { x:1, y:2 }
+//grab input file
+var filePath = path.resolve(__dirname + '/input.txt');
+var fileData = fs.readFileSync(filePath, 'utf8');
 
-/*var state = { width: 5,
-              height: 5,
-              dirtPositions: {"1,0": true, "2,2": true, "2,3": true},
-              directions: "NNESEESWNWW",
-              index: 0}
-*/
+//set up a state for the program
+var position = {};
+var state = programState(fileData)
 
-var state = fileInput(fileData)
-
-
-console.log('hhhhhh==>>', state)
-
-function toObject (a, pos) {
-  a[pos.x + "," + pos.y] = true;
-  return a;
-}
-
-function fileInput (input) {
-
+function programState (input) {
   var lines = input.trim().split("\n")
-  //console.log("fileInput function: ", lines)
   var drivingDirections = lines.pop();
   var roomDimensions = coordinates(lines.shift());
-  var startPosition = coordinates(lines.shift())
-  var dirtPositions = lines.map(coordinates).reduce(toObject, {})
+  var startPosition = startingPosition(lines.shift());
+  var dirtPositions = lines.map(coordinates).reduce(toDirtObject, {})
 
   return {
               width: parseInt(roomDimensions.x),
@@ -43,16 +26,29 @@ function fileInput (input) {
          }
 }
 
-function coordinates (str) {
-  //console.log('sssheyyyy==>', str)
-  var ret={x:str.split(" ")[0], y:str.split(" ")[1]}
-  //console.log("coordinates function",str, ret)
-  return ret;
-  //returns an object
+//helpers to format the program state
+function toDirtObject (val, pos) {
+  val[pos.x + "," + pos.y] = true;
+  return val;
 }
 
+function startingPosition (str) {
+  position = {x: parseInt(str[0]), y: parseInt(str[2])};
+}
 
+function coordinates (str) {
+  var ret = { x:str.split(" ")[0], y:str.split(" ")[1]}
+  return ret;
+}
+
+//function to handle the Roomba direction
 function move (direction, position) {
+  if (position.x >= state.width || position.x == 0) {
+    return { x:position.x, y:position.y}
+  }
+  if (position.y >= state.height || position.y == 0) {
+    return { x:position.x, y:position.y}
+  }
   if (direction === "N")  {
     //move north from position
     return { x:position.x, y:position.y + 1}
@@ -71,19 +67,19 @@ function move (direction, position) {
   }
 }
 
+//function to read directions and count dirt patches
 function drive () {
-  var hits = 0
+  var cleanedDirtPatches = 0
   while (state.index < state.directions.length) {
     var nextPos = move(state.directions[state.index], position )
       if (state.dirtPositions[nextPos.x + "," + nextPos.y]) {
-        hits++
+        cleanedDirtPatches++
         state.dirtPositions[nextPos.x + "," + nextPos.y] = false;
-        console.log("hitpositionX: " + nextPos.x, "hitpositionY: " + nextPos.y);
       }
       state.index++
       position = nextPos
   }
-  console.log("positionX: " + position.x, "positionY: " + position.y, " and hits: " + hits)
+  console.log("A final Roomba position of X: " + position.x, " and Y: " + position.y, " with cleanedDirtPatches: " + cleanedDirtPatches)
 }
 
 drive()
